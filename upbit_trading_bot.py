@@ -105,10 +105,11 @@ def window_getCoin():
     window_getCoin.mainloop()
 
 def fn_getGraph(ticker):
-    plt.rcParams["123.figsize"] = (6,3)
+    plt.rcParams["figure.figsize"] = (7,3)
     plt.rcParams["axes.formatter.limits"] = -10000, 10000
     price = coin.get_ohlcv(ticker, interval= 'minute1', count = 1000)
     price[["close", "volume"]].plot(secondary_y=["volume"])
+
     plt.show()
 
 main()
