@@ -4,7 +4,8 @@ import pyupbit as coin
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import time
+import datetime
+import time, calendar
 
 def main():
     window = Tk()
@@ -68,11 +69,11 @@ def fn_login():
     messagebox.showinfo("알림", "시작완료")
 
 
+
 def fn_showMoney():
-    myMoney = account.get_balance()
-    current_KRW = myMoney
+    myMoney = account.get_balance("KRW")
     showMoney_txt.delete(0, END)
-    showMoney_txt.insert(0, str(int(current_KRW)))
+    showMoney_txt.insert(END, str(int(myMoney)))
     messagebox.showinfo("알림", "현재 잔액: {}".format(int(myMoney)))
 
 def window_extraFn():
@@ -116,16 +117,70 @@ def fn_getGraph(ticker):
 
 def fn_trading():
     window_trading = Tk()
-    window_trading.geometry("800x400")
+    window_trading.geometry("500x400")
     window_trading.title("자동매매 구동중")
+
+    global text_tradeLog
     
-    text_tradeLog = Text(window_trading, width=112, height=30)
-    text_tradeLog.place(x= 0,y = 0)
+    
+    scroll = Scrollbar(window_trading, orient='vertical')
+    scroll.pack(side='right', fill = 'y')
+    
+    text_tradeLog = Listbox(window_trading, width=50, height=23)
+    text_tradeLog.config(yscrollcommand=scroll.set)
+    text_tradeLog.place(x= 0, y = 0)
+    scroll.config(command=text_tradeLog.yview)
+
     ticker = tradeCoinName_txt.get()
-    while(3):
-        text_tradeLog.insert(END , account.buy_market_order(ticker, 6000))
-        text_tradeLog.insert(END, "\n")
-        text_tradeLog.insert(END, "\n")
+    df = coin.get_ohlcv(ticker, count = 2, interval = "day")
+
+    targetPrice = get_targetPrice(df, 0.5)
+    text_tradeLog.insert(END, "목표가 : {}\n\n".format(targetPrice))
+    text_tradeLog.update()
+    text_tradeLog.see(END)
+
+    count = 0
+
+    while(True):
+        now = datetime.datetime.now()
+        if (now.hour == 9 and now.minute == 0 and now.second == 0):
+            sell_all(ticker)
+            df = coin.get_ohlcv(ticker, count = 2, interval = "day")
+            targetPrice = get_targetPrice(df, 0.5)             
+        if targetPrice <= coin.get_current_price(ticker) :
+            buy_all(ticker)
+            start_time = df.index[-1]
+            end_time = start_time + datetime.timedelta(days=1)
+            time.sleep((end_time - now).seconds)
+            time.sleep(1)
+        else:
+            text_tradeLog.insert(END, "최적의 매수/매도조건 판단중 . . .\n")
+            text_tradeLog.update()
+            text_tradeLog.see(END)
+            time.sleep(1)
+            
+
+        
+
+def get_targetPrice(df, K) :
+    range = df['high'][-2] - df['low'][-2]
+    return df['open'][-1] + range * K
+
+def buy_all(ticker) :
+    balance = account.get_balance("KRW")
+    if balance >= 5000 :
+        text_tradeLog.insert(END , "{} \n\n".format(account.buy_market_order(ticker, balance)))
+        text_tradeLog.update()
+        text_tradeLog.see(END)
+
+def sell_all(ticker) :
+    balance = account.get_balance(ticker)
+    price = coin.get_current_price(ticker)
+    if price * balance >= 5000 :
+        text_tradeLog.insert(END , "{} \n\n".format(account.sell_market_order(ticker, balance)))
+        text_tradeLog.update()
+        text_tradeLog.see(END)
+
 
 main()
 
