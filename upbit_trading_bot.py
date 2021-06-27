@@ -126,7 +126,7 @@ def fn_trading():
     scroll = Scrollbar(window_trading, orient='vertical')
     scroll.pack(side='right', fill = 'y')
     
-    text_tradeLog = Listbox(window_trading, width=50, height=23)
+    text_tradeLog = Listbox(window_trading, width=52, height=23)
     text_tradeLog.config(yscrollcommand=scroll.set)
     text_tradeLog.place(x= 0, y = 0)
     scroll.config(command=text_tradeLog.yview)
@@ -154,7 +154,7 @@ def fn_trading():
             time.sleep((end_time - now).seconds)
             time.sleep(1)
         else:
-            text_tradeLog.insert(END, "최적의 매수/매도조건 판단중 . . .\n")
+            text_tradeLog.insert(END, "목표 금액 대기중 . . .\n")
             text_tradeLog.update()
             text_tradeLog.see(END)
             time.sleep(1)
