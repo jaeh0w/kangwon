@@ -1,6 +1,11 @@
 from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
 import tkinter.font as ft
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from openpyxl import load_workbook
 import time , datetime
 
@@ -11,21 +16,40 @@ def main():
 
     myFont = ft.Font(family = "나눔고딕")
     label_target = Label(main, text="타겟 대상 : ", font=myFont).place(x = 40, y = 20)
+    label_excel = Label(main, text="엑셀 이름 : ", font=myFont).place(x = 40, y = 50)
+    label_max = Label(main, text="최대 페이지 : \n(N * 10) ", font=myFont).place(x = 28, y = 80)
     entry_target = Entry(main)
     entry_target.place(x = 105, y= 20)
-    button_target = Button(main, text="시작", command=lambda : targeting(entry_target.get()), fg="green", width=5).place(x = 300, y = 18)
+    global entry_excel 
+    entry_excel= Entry(main)
+    entry_excel.place(x = 105, y= 50)
+    global entry_max 
+    entry_max = Entry(main)
+    entry_max.place(x = 105, y= 80)
+    button_target = Button(main, text="시작", command=lambda : targeting(entry_target.get()), fg="green", bg = "black", width=30, height=2).place(x = 40, y = 140)
     main.mainloop()
 
 
 def targeting(t):
-    baseUrl = "http://www.yes24.com//24/usedShop/mall/cjudeer/main"
+    if(str(t) == "북코치"):
+        baseUrl = "http://www.yes24.com//24/usedShop/mall/cjudeer/main"
+    elif(str(t) == "마음북"):
+        baseUrl = "http://www.yes24.com//24/usedShop/mall/saguraba/main"
+    elif(str(t) == "할인에할인"):
+        baseUrl = "http://www.yes24.com//24/usedShop/mall/freeman001/main"
+    else:
+        messagebox.showinfo("알림", "올바른 대상을 입력하세요!")
+    #http://www.yes24.com//24/usedShop/mall/saguraba/main 마음북
+    #http://www.yes24.com//24/usedShop/mall/cjudeer/main 북코치
+    #http://www.yes24.com//24/usedShop/mall/freeman001/main 할인에할인
     # url = baseUrl+str((plusUrl))
     url = baseUrl
     driver = webdriver.Safari()
     driver.maximize_window()
     driver.get(url)
-    time.sleep(1)
+    time.sleep(2)
 
+    # WebDriverWait(driver,1).until(EC.element_to_be_clickable((By.XPATH('//*[@id="divYes24SCMEvent"]/div[2]/div[1]/label'))))
     driver.find_element_by_xpath('//*[@id="divYes24SCMEvent"]/div[2]/div[1]/label').click()
 
     getInfo(driver)
@@ -33,31 +57,86 @@ def targeting(t):
 
 def getInfo(driver):
     count = 0
-    for k in range(10):
-        for j in range(3,13):
-            scrollDown(driver)
-            lst = driver.find_elements_by_css_selector("strong.used-class-lowest") #최저가 탐색
-            time.sleep(1)
+    xNo = 3
+    max = int(entry_max.get())
+    for j in range(1,max):
+        href = "#entrno=242444&mallid=cjudeer&searchname=&filtername=NAME&PageNumber=" + str(xNo)
+        
+        scrollDown(driver)
+        try:
+            lst = WebDriverWait(driver,1).until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, 'strong.used-class-lowest')))
             for i in range(len(lst)):
                 try:
                     lst[i].click()
-                    time.sleep(1)
-                    title = driver.find_elements_by_tag_name('h2.gd_name')[0].text
-                    price = driver.find_elements_by_tag_name('em.yes_m')[0].text
-                    auth = driver.find_elements_by_tag_name('span.gd_auth')[0].text
-                    publisher = driver.find_elements_by_tag_name('span.gd_pub')[0].text
-                    date = driver.find_elements_by_tag_name('span.gd_date')[0].text
-                    # isbn = getISBN(driver)
-                    driver.back()
+                    title = WebDriverWait(driver, 1).until(EC.visibility_of_all_elements_located((By.TAG_NAME, 'h2.gd_name')))
+                    price = driver.find_element_by_tag_name('em.yes_m').text
+                    auth = driver.find_element_by_tag_name('span.gd_auth').text
+                    publisher = driver.find_element_by_tag_name('span.gd_pub').text
+                    date = driver.find_element_by_tag_name('span.gd_date').text
                     count+=1
                     price = price.replace(",", "")
                     Yes24WriteExcel(123, title, price, auth, publisher, date, count)
                 except:
+                    count+=1
                     driver.back()
                     pass
-            a = driver.find_elements_by_css_selector("p.page > *") #페이지 넘기
-            a[j].click()
-            scrollUp(driver)
+                finally:
+                    driver.back()
+                    pass
+        except:
+            pass
+        time.sleep(1)
+        print(xNo)
+        try:
+
+            driver.find_element_by_css_selector("a[href='{}']".format(href)).click()
+        except:
+            pass
+        finally:
+            xNo+=1
+            #entrno=242444&mallid=cjudeer&searchname=&filtername=NAME&PageNumber=13
+
+            # a = WebDriverWait(driver,5).until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "p.page > *")))
+            # a[j].click()
+        
+        # driver.find_element_by_xpath('//*[@id="div_ListContainer"]/div[4]/center/p/a['+ str(j) +']').click()
+
+        # driver.find_element_by_xpath('//*[@id="div_ListContainer"]/div[4]/center/p/a['+str(xNo)+']').click()
+        # xNo+=1
+        # print(xNo)
+        # if(xNo == 13):
+        #     xN0 = 3
+                        # driver.find_element_by_xpath('//a[contains(@href,"#entrno=242444&mallid=cjudeer&searchname=&filtername=NAME&PageNumber='+str(j)+'")]').click()
+        # driver.find_element_by_xpath('//a[@href="'+"#entrno=242444&mallid=cjudeer&searchname=&filtername=NAME&PageNumber="+str(j)+'"]').click()
+        # //*[@id="div_ListContainer"]/div[3]/center/p/a[3]
+        # //*[@id="div_ListContainer"]/div[3]/center/p/a[3]
+
+        scrollUp(driver)
+#
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[4] # 2
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[5] # 4
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[8] # 7
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[11] # 10
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[11] # 10
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[12] # 11
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[4]
+# //*[@id="div_ListContainer"]/div[3]/center/p/a[12] # 11
+# //*[@id="div_ListContainer"]/div[3]/center/p/a[3] # 12
+# //*[@id="div_ListContainer"]/div[3]/center/p/a[4] # 13
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[5] # 14
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[6] # 15
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[7] # 16
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[8] # 17
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[9] # 18
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[10] # 19
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[11] # 20
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[12] # 21
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[3] # 22
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[4] # 23
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[5] # 24
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[4] # 33
+# //*[@id="div_ListContainer"]/div[4]/center/p/a[13] # 
+
 
 def scrollUp(driver):
     start = datetime.datetime.now() 
@@ -76,25 +155,10 @@ def scrollDown(driver):
         if datetime.datetime.now() > end:
             break
 
-def getISBN(driver):
-    try:
-        driver.find_element_by_xpath('//*[@id="divFormatInfo"]/ul/li[1]').click()
-        time.sleep(1)
-        driver.switch_to_window(driver.window_handles[1]) 
-        driver.get_window_position(driver.window_handles[1])
-        isbn = driver.find_element_by_xpath('//*[@id="infoset_specific"]/div[2]/div/table/tbody/tr[3]/td').text
-        driver.close()
-        time.sleep(3)
-        driver.switch_to.window(driver.window_handles[0])
-        return isbn
-    except:
-        return 0
-
-
 
 def Yes24WriteExcel(isbn, title, price, auth, publisher, date, count):
-
-    wb = load_workbook("test.xlsx")
+    excel_name = str(entry_excel.get()) + ".xlsx"
+    wb = load_workbook(excel_name)
     ws = wb.active
     ws.cell(count,2,isbn)
     ws.cell(count,3,1111)
@@ -107,7 +171,7 @@ def Yes24WriteExcel(isbn, title, price, auth, publisher, date, count):
     ws.cell(count,13,"품질보장~!! (미사용 ★ 출판사에서 직접구매한 새★책 ^^)  ■  >□<")
     ws.cell(count,15,1)
     ws.cell(count,16,1)
-    wb.save("test.xlsx")
+    wb.save(excel_name)
 
 main()
 
