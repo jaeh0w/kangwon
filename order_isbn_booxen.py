@@ -1,4 +1,3 @@
-from os import pwrite
 from tkinter import *
 import tkinter.font as ft
 from selenium import webdriver
@@ -12,80 +11,115 @@ def main():
     main = Tk()
     main.title("북쎈 ISBN 봇")
     main.geometry("400x200")
+    
+    global ID
+    global PW
+    ID = "naerok2"
+    PW = "ipass3309="
 
-    myFont = ft.Font(family = "나눔고딕")
-    button_target = Button(main, text="시작", command=lambda : macro(), fg="green", width=5).place(x = 300, y = 18)
+    button_target = Button(main, text="시작", command=lambda : macro(), fg="black", width=5, height =2).place(x = 300, y = 18)
     main.mainloop()
 
 def macro():
     url = "https://orderbook.booxen.com/"
-    global ID, PW
-    ID = "naerok2"
-    PW = "ipass3309!"
     driver = webdriver.Safari()
     driver.maximize_window()
     driver.get(url)
     time.sleep(1)
     driver.find_element_by_xpath('//*[@id="userId"]').send_keys(ID)
+    time.sleep(1)
     driver.find_element_by_xpath('//*[@id="pass"]').send_keys(PW)
     driver.find_element_by_xpath('//*[@id="adm-intro"]/div[1]/div[1]/div/div[2]/div[2]/div/form/button/img').click()
     time.sleep(6)
     searchInfo(driver)
 
 def searchInfo(driver):
-    count = 1
+    global count
+    count = 2
+    deleteNo = 0
     bookList=load_workbook(filename='test.xlsx')
     sheet = bookList.active
-    for i in range(sheet.max_row):
+    max = sheet.max_row
+    bookList.close()
+    for i in range(max-1):
         try:
+            bookList=load_workbook(filename='test.xlsx')
+            sheet = bookList.active
             book = sheet.cell(count,2).value
-            driver.find_element_by_xpath('//*[@id="kwdGnb"]').send_keys(book)
-            time.sleep(0.5)
-            driver.find_element_by_xpath('//*[@id="selForm"]/fieldset/div[2]/a/img').click()
-            time.sleep(1)
-            per = driver.find_elements_by_xpath('//*[@id="itemPrice0"]')[1].text
+            book = book.replace("'", "")
+            WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="kwdGnb"]'))).send_keys(book)# find_element_by_xpath('//*[@id="kwdGnb"]').send_keys(book)
+            WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="selForm"]/fieldset/div[2]/a/img'))).click()
+  
+            per = WebDriverWait(driver, 5).until(EC.presence_of_all_elements_located((By.XPATH, '//*[@id="itemPrice0"]')))[1].text
             per = per[-4:]
             per = per.replace(')', '')
-            writeExcel(per, count)
-            price = driver.find_element_by_xpath('//*[@id="itemPrice0"]').text
-            print(price)
-            okToSell(count, per, price)
+
+            price = driver.find_elements_by_xpath('//*[@id="itemPrice0"]')[1].text
+            price = price[5:12]
+            price = price.replace('원', '')
+            price = price.replace(',', '')
+            try:
+                price = price.replace(' ', '')
+            except:
+                pass
+            
+            ownPrice = sheet.cell(count, 9).value
+            sheet.cell(count, 20, "{}".format(per))
+            bookList.save("test.xlsx")
+            bookList.close()
+
+            okPrice = int(price) + int(ownPrice/10)
+
+            okToSell(count, per, ownPrice, okPrice, deleteNo)
         except:
-            pass
+            sheet.cell(count, 20, "100%")
+            bookList.save("test.xlsx")
+            bookList.close()
         finally:
-            count+=1
-            pass
+            driver.find_element_by_xpath('//*[@id="kwdGnb"]').clear()
+        count+=1
 
-def writeExcel(per, count):
-    bookList=load_workbook(filename='test.xlsx')
+def betterOne(count):
+    bookList = load_workbook(filename = "test.xlsx")
     sheet = bookList.active
-    sheet.cell(count,18,per)
-    bookList.save("test.xlsx")
+    kyobo = sheet.cell(count, 19).value
+    boosen = sheet.cell(count, 20).value
 
-def writeStar(count):
-    bookList=load_workbook(filename='test.xlsx')
-    sheet = bookList.active
-    sheet.cell(count,1,"X")
-    bookList.save("test.xlsx")
+    kyobo = kyobo.replace("%", "")
+    boosen = boosen.replace("%", "")
+    print(sheet.cell(count, 10).value)
+    kyobo = int(kyobo)
+    boosen = int(boosen)
 
-def okToSell(count, per, price):
-    price = price[-7:]
-    price = price.replace('원', '')
-    price = price.replace(',', '')
-    try:
-        price = price.replace(' ', '')
-    except:
-        pass
-    bookList=load_workbook(filename='test.xlsx')
-    sheet = bookList.active
-    ownPrice = sheet.cell(count,9).value
-    okPrice = int(price) + int(ownPrice/10)
+    if(kyobo == 100 and boosen == 100):
+        sheet.cell(count, 1, "★")
+        bookList.save("test.xlsx")
+        bookList.close()
+    elif(kyobo >= boosen):
+        sheet.cell(count, 1, "북쎈")
+        bookList.save("test.xlsx")
+        bookList.close()
+    elif(kyobo < boosen):
+        sheet.cell(count, 1, "교보")
+        bookList.save("test.xlsx")
+        bookList.close()
+    else:
+        sheet.cell(count, 1, "★")
+        bookList.save("test.xlsx")
+        bookList.close()
+    
 
+def okToSell(count, per, ownPrice, okPrice, deleteNo):
+    print("own : {} , ok : {}, per : {}, count : {}, deleteNo : {}".format(ownPrice, okPrice, per, count, deleteNo))
     if(ownPrice < okPrice):
-        writeStar(count)
+        bookList=load_workbook(filename='test.xlsx')
+        sheet = bookList.active
+        sheet.cell(count, 20, "100%")
+        bookList.save("test.xlsx")
+        bookList.close()
     else:
         bookList=load_workbook(filename='test.xlsx')
         sheet = bookList.active
-        sheet.cell(count,1,"")
-        bookList.save("test.xlsx")
+        sheet.cell(count, 20, per)
+            
 main()

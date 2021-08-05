@@ -17,7 +17,8 @@ def main():
     myFont = ft.Font(family = "나눔고딕")
     label_target = Label(main, text="타겟 대상 : ", font=myFont).place(x = 40, y = 20)
     label_excel = Label(main, text="엑셀 이름 : ", font=myFont).place(x = 40, y = 50)
-    label_max = Label(main, text="최대 페이지 : \n(N * 10) ", font=myFont).place(x = 28, y = 80)
+    label_max = Label(main, text="최대 페이지 : \n", font=myFont).place(x = 28, y = 80)
+    label_max = Label(main, text="시작 페이지 : \n ", font=myFont).place(x = 28, y = 110)
     entry_target = Entry(main)
     entry_target.place(x = 105, y= 20)
     global entry_excel 
@@ -26,6 +27,8 @@ def main():
     global entry_max 
     entry_max = Entry(main)
     entry_max.place(x = 105, y= 80)
+    entry_min = Entry(main)
+    entry_min.place(x = 105, y= 110)
     button_target = Button(main, text="시작", command=lambda : targeting(entry_target.get()), fg="green", bg = "black", width=30, height=2).place(x = 40, y = 140)
     main.mainloop()
 
@@ -61,34 +64,31 @@ def getInfo(driver):
     max = int(entry_max.get())
     for j in range(1,max):
         href = "#entrno=242444&mallid=cjudeer&searchname=&filtername=NAME&PageNumber=" + str(xNo)
-        
-        scrollDown(driver)
+        driver.find_element_by_css_selector("a[href='{}']".format(href)).click()
         try:
-            lst = WebDriverWait(driver,1).until(EC.visibility_of_all_elements_located((By.CSS_SELECTOR, 'strong.used-class-lowest')))
+            scrollDown(driver)
+            time.sleep(1)
+            lst = WebDriverWait(driver,10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'strong.used-class-lowest')))
             for i in range(len(lst)):
                 try:
                     lst[i].click()
-                    title = WebDriverWait(driver, 1).until(EC.visibility_of_all_elements_located((By.TAG_NAME, 'h2.gd_name')))
+                    title = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'h2.gd_name'))).text
                     price = driver.find_element_by_tag_name('em.yes_m').text
                     auth = driver.find_element_by_tag_name('span.gd_auth').text
                     publisher = driver.find_element_by_tag_name('span.gd_pub').text
                     date = driver.find_element_by_tag_name('span.gd_date').text
-                    count+=1
                     price = price.replace(",", "")
                     Yes24WriteExcel(123, title, price, auth, publisher, date, count)
-                except:
-                    count+=1
-                    driver.back()
-                    pass
                 finally:
+                    count+=1
                     driver.back()
                     pass
         except:
+            print(123123)
             pass
         time.sleep(1)
         print(xNo)
         try:
-
             driver.find_element_by_css_selector("a[href='{}']".format(href)).click()
         except:
             pass
@@ -157,20 +157,22 @@ def scrollDown(driver):
 
 
 def Yes24WriteExcel(isbn, title, price, auth, publisher, date, count):
-    excel_name = str(entry_excel.get()) + ".xlsx"
+    excel_name = "test.xlsx"
     wb = load_workbook(excel_name)
     ws = wb.active
-    ws.cell(count,2,isbn)
-    ws.cell(count,3,1111)
-    ws.cell(count,4,"A")
-    ws.cell(count,5,"A")
-    ws.cell(count,6,"N")
-    ws.cell(count,7,"1")
-    ws.cell(count, 9, int(price)-50)
-    ws.cell(count,10,title)
-    ws.cell(count,13,"품질보장~!! (미사용 ★ 출판사에서 직접구매한 새★책 ^^)  ■  >□<")
-    ws.cell(count,15,1)
-    ws.cell(count,16,1)
+    # ws.cell(count,2,isbn)
+    # ws.cell(count,3,1111)
+    # ws.cell(count,4,"A")
+    # ws.cell(count,5,"A")
+    # ws.cell(count,6,"N")
+    # ws.cell(count,7,"1")
+    # ws.cell(count,9, int(price)-50)
+    # ws.cell(count,10,title)
+    # ws.cell(count,13,"품질보장~!! (미사용 ★ 출판사에서 직접구매한 새★책 ^^)  ■  >□<")
+    # ws.cell(count,15,1)
+    # ws.cell(count,16,1)
+    lst = ["",isbn, 1111, 'A', 'A', 'N', 1, "", int(price)-50, title]
+    ws.append(lst)
     wb.save(excel_name)
 
 main()
