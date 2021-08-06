@@ -45,28 +45,21 @@ def kyobo(fileName, partner, final_fileName):
     mainExcel_ws = mainExcel.active
     first = mainExcel_ws.max_row
     print(first)
-    for i in range(7, max):
-        when = str(goExcel_ws.cell(i, 23).value)
-        isbn = goExcel_ws.cell(i, 17).value
-        name = goExcel_ws.cell(i, 2).value
-        pub = goExcel_ws.cell(i, 3).value
-        ownPrice = goExcel_ws.cell(i, 12).value
-        per = goExcel_ws.cell(i, 13).value
-        amount = goExcel_ws.cell(i, 10).value
-        price = goExcel_ws.cell(i, 21).value
+    for i in range(3, max):
+        when = str(goExcel_ws.cell(i, 2).value)
+        isbn = goExcel_ws.cell(i, 5).value
+        name = goExcel_ws.cell(i, 6).value
+        pub = goExcel_ws.cell(i, 7).value
+        auth = goExcel_ws.cell(i, 8).value
+        ownPrice = goExcel_ws.cell(i, 10).value
+        per = goExcel_ws.cell(i, 12).value
+        amount = goExcel_ws.cell(i, 11).value
+        price = goExcel_ws.cell(i, 14).value
         when = when.replace("-", ".")
-
-        IN = int((int(isbn)*int(price+i))/(10000000-i))
-
-        per = int(per*100)
-        per = "{}%".format(per)
-
-        price = int(price)
-        ownPrice = int(ownPrice)
-
-        price = "{:,}".format(price)
-        ownPrice = "{:,}".format(ownPrice)
         
+        inPrice = price.replace(",", "")
+
+        IN = int((int(isbn)*int(int(inPrice)+i))/(10000000-i))
 
         mainExcel_ws.cell(first, 1, "IN{}".format(IN))
         mainExcel_ws.cell(first, 2, when)
@@ -74,7 +67,7 @@ def kyobo(fileName, partner, final_fileName):
         mainExcel_ws.cell(first, 4, isbn)
         mainExcel_ws.cell(first, 5, name)
         mainExcel_ws.cell(first, 6, pub)
-        mainExcel_ws.cell(first, 7, "auth")
+        mainExcel_ws.cell(first, 7, auth)
         mainExcel_ws.cell(first, 8, ownPrice)
         mainExcel_ws.cell(first, 9, per)
         mainExcel_ws.cell(first, 10, amount)
@@ -111,6 +104,8 @@ def booxen(fileName, partner, final_fileName):
         when = when[0:10]
         when = when.replace("-", ".")
         IN = int((int(isbn)*int(price+i))/(10000000-i))
+        price = "{:,}".format(price)
+        ownPrice = "{:,}".format(ownPrice)
         #mainExcel_ws.append(value)
         mainExcel_ws.cell(first, 1, "IN{}".format(IN))
         mainExcel_ws.cell(first, 2, when)

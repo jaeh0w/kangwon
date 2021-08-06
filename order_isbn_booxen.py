@@ -22,7 +22,7 @@ def main():
 
 def macro():
     url = "https://orderbook.booxen.com/"
-    driver = webdriver.Safari()
+    driver = webdriver.Firefox(executable_path=r'D:\Auto Bak\Desktop\macro\geckodriver.exe')
     driver.maximize_window()
     driver.get(url)
     time.sleep(1)
@@ -46,7 +46,6 @@ def searchInfo(driver):
             bookList=load_workbook(filename='test.xlsx')
             sheet = bookList.active
             book = sheet.cell(count,2).value
-            book = book.replace("'", "")
             WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="kwdGnb"]'))).send_keys(book)# find_element_by_xpath('//*[@id="kwdGnb"]').send_keys(book)
             WebDriverWait(driver, 20).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="selForm"]/fieldset/div[2]/a/img'))).click()
   
@@ -76,6 +75,7 @@ def searchInfo(driver):
             bookList.save("test.xlsx")
             bookList.close()
         finally:
+            betterOne(count)
             driver.find_element_by_xpath('//*[@id="kwdGnb"]').clear()
         count+=1
 
